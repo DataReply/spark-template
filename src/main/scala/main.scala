@@ -1,5 +1,7 @@
-import org.apache.spark.SparkContext
+import org.apache.spark._
+import org.apache.spark.graphx._
 import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
 
 import scala.util.Try
 import com.typesafe.config.ConfigFactory
@@ -9,32 +11,35 @@ import java.util.Map.Entry
 import java.io.File
 
 object TemplateApplication {
-  private def getPropertiesList( key: String ) = {
-    val list = Try( config.getConfig( key ).entrySet().toArray ).getOrElse( Array() )
-    list.map( x => {
-      val p = x.asInstanceOf[Entry[String, ConfigValue]]
-      val k = p.getKey
 
-      val v = p.getValue.valueType match {
-        case BOOLEAN => config.getBoolean( key + "." + k )
-        case STRING => config.getString( key + "." + k )
-        case NUMBER => config.getDouble( key + "." + k )
-        case _ => config.getString( key + "." + k )
-      }
-      ( k.replace( "_", "." ), v.toString )
-    } )
+  object Configuration {
+    private def getPropertiesList( key: String ) = {
+      val list = Try( config.getConfig( key ).entrySet().toArray ).getOrElse( Array() )
+      list.map( x => {
+        val p = x.asInstanceOf[Entry[String, ConfigValue]]
+        val k = p.getKey
+
+        val v = p.getValue.valueType match {
+          case BOOLEAN => config.getBoolean( key + "." + k )
+          case STRING => config.getString( key + "." + k )
+          case NUMBER => config.getDouble( key + "." + k )
+          case _ => config.getString( key + "." + k )
+        }
+        ( k.replace( "_", "." ), v.toString )
+      } )
+    }
+
+    // Spark configuration - loading from "resources/application.conf"
+    private var config = ConfigFactory.load()
+    lazy val SPARK_MASTER_HOST = Try( config.getString( "spark.master_host" ) ).getOrElse( "local" )
+    lazy val SPARK_MASTER_PORT = Try( config.getInt( "spark.master_port" ) ).getOrElse( 7077 )
+    lazy val SPARK_HOME = Try( config.getString( "spark.home" ) ).getOrElse( "/home/spark" )
+    lazy val SPARK_MEMORY = Try( config.getString( "spark.memory" ) ).getOrElse( "1g" )
+    lazy val SPARK_OPTIONS = getPropertiesList( "spark.options" )
   }
 
-  // Spark configuration - loading from "resources/application.conf"
-  private var config = ConfigFactory.load()
-  lazy val SPARK_MASTER_HOST = Try( config.getString( "spark.master_host" ) ).getOrElse( "local" )
-  lazy val SPARK_MASTER_PORT = Try( config.getInt( "spark.master_port" ) ).getOrElse( 7077 )
-  lazy val SPARK_HOME = Try( config.getString( "spark.home" ) ).getOrElse( "/home/spark" )
-  lazy val SPARK_MEMORY = Try( config.getString( "spark.memory" ) ).getOrElse( "1g" )
-  lazy val SPARK_OPTIONS = getPropertiesList( "spark.options" )
-
   def connectToSparkCluster(): SparkContext = {
-
+    import Configuration._
     // get the name of the packaged
     val thisPackagedJar = new File( "target/scala-2.10" ).listFiles.filter( x => x.isFile && x.getName.toLowerCase.takeRight( 4 ) == ".jar" ).toList.map( _.toString )
 
@@ -65,9 +70,11 @@ object TemplateApplication {
   def main(args: Array[String] ) {
     val sc = connectToSparkCluster
 
+    // the SparkContext is now available as sc
     val f = sc.textFile("README.md")
-
     println(f.count)
+
+    // GraphX is also available here
 
   }
 }

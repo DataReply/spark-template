@@ -22,6 +22,7 @@ object MyBuild extends Build {
 
     // External libraries
     libraryDependencies += "org.apache.spark" %% "spark-core" % "0.9.1",
+    libraryDependencies += "org.apache.spark" %% "spark-graphx" % "0.9.1",
     libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion
   ))
 
