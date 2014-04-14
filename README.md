@@ -11,3 +11,14 @@ A scala/sbt template for a standalone Spark application.
   - the memory for each spark worker
   - the path to the spark installation
 
+* To package and run using sbt:
+```sbt package```
+```sbt run```
+
+* To build an executable pack and run it
+```sbt package```
+```sbt pack```
+```target/pack/bin/template```
+
+* To generate eclipse project:
+```sbt eclipse```
